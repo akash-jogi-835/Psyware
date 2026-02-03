@@ -3,8 +3,8 @@ import datetime
 import uuid
 import requests
 
-# Use your Production URL and ensure the n8n workflow is toggled to 'Active'
-N8N_WEBHOOK_URL = "https://akashaigents.app.n8n.cloud/webhook/digital-wellbeing" 
+# Your n8n Production Webhook URL
+N8N_WEBHOOK_URL = "https://akashaigents.app.n8n.cloud/webhook/digital-wellbeing"
 
 def now():
     return datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
@@ -77,35 +77,37 @@ if prompt:
 if current["messages"] and current["messages"][-1]["sender"] == "user":
     with st.spinner("StressSense is thinking..."):
         try:
-            # 1. Prepare payload compatible with your n8n JavaScript 'reach-back' code
+            # Prepare payload matching n8n webhook expectations
             payload = {
+                "message": current["messages"][-1]["text"],
                 "session_id": st.session_state.current_session_id,
-                "body": {
-                    "messages": [{"text": current["messages"][-1]["text"]}]
-                }
+                "message_id": str(uuid.uuid4())
             }
             
-            # 2. POST request to n8n
+            # POST request to n8n
             response = requests.post(N8N_WEBHOOK_URL, json=payload, timeout=30)
             
-            # 3. Enhanced error checking for the 'line 1 column 1' error
+            # Parse response
             if response.status_code == 200:
                 try:
                     data = response.json()
-                    # Targeting the 'message' key returned by your JavaScript node
+                    
+                    # Extract fields from n8n Format Response node
                     assistant_text = data.get("message", "No message found.")
+                    stress_level = data.get("stress_level", "Not assessed")
                     
                     # Update the sidebar's stress level dynamically
-                    current["stress_level"] = data.get("stress_level", "Not assessed")
+                    current["stress_level"] = stress_level
+                    
                 except ValueError:
                     assistant_text = "The brain sent back a non-JSON response. Check n8n production settings."
             else:
-                assistant_text = f"Connection error: {response.status_code}"
+                assistant_text = f"Connection error: {response.status_code} - {response.text}"
                 
         except requests.exceptions.RequestException as e:
             assistant_text = f"Network error: Could not reach the n8n agent. {str(e)}"
 
-    # 4. Append assistant response and refresh
+    # Append assistant response and refresh
     current["messages"].append({
         "sender": "assistant",
         "text": assistant_text,
@@ -113,4 +115,3 @@ if current["messages"] and current["messages"][-1]["sender"] == "user":
     })
 
     st.rerun()
-

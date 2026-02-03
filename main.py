@@ -4,7 +4,7 @@ import uuid
 import requests
 
 # Your n8n Production Webhook URL
-N8N_WEBHOOK_URL = "https://akashaigents.app.n8n.cloud/webhook/digital-wellbeing"
+N8N_WEBHOOK_URL = "https://akashaigents.app.n8n.cloud/webhook-test/digital-wellbeing"
 
 def now():
     return datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
@@ -115,3 +115,4 @@ if current["messages"] and current["messages"][-1]["sender"] == "user":
     })
 
     st.rerun()
+

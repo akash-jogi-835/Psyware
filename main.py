@@ -4,7 +4,7 @@ import uuid
 import requests
 
 # Use your Production URL and ensure the n8n workflow is toggled to 'Active'
-N8N_WEBHOOK_URL = "http://localhost:5678/webhook/stress-agent" 
+N8N_WEBHOOK_URL = "https://akashaigents.app.n8n.cloud/webhook/digital-wellbeing" 
 
 def now():
     return datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
@@ -111,4 +111,5 @@ if current["messages"] and current["messages"][-1]["sender"] == "user":
         "text": assistant_text,
         "timestamp": now()
     })
+
     st.rerun()

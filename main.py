@@ -42,9 +42,9 @@ st.markdown("""
 def query_chatbot(session_id, user_message, conversation_history):
     url = "https://superexplicitly-nonderogatory-eleanor.ngrok-free.dev/webhook/stressagent"
 
-    # Format history as clean list for Agent 1 to read
+    # Explicitly serialize each message to plain strings — prevents [object Object]
     formatted_history = [
-        {"role": msg["role"], "content": msg["content"]}
+        {"role": str(msg["role"]), "content": str(msg["content"])}
         for msg in conversation_history
     ]
 
@@ -53,7 +53,9 @@ def query_chatbot(session_id, user_message, conversation_history):
         "message": user_message,
         "conversation_history": formatted_history
     }
-    payload = json.dumps(payload_dict)
+
+    # json.dumps ensures proper serialization before sending
+    payload = json.dumps(payload_dict, ensure_ascii=False)
     headers = {'Content-Type': 'application/json'}
 
     try:
@@ -100,17 +102,23 @@ for message in st.session_state.messages:
 
 # --- USER INPUT ---
 if prompt := st.chat_input("How are you feeling today?"):
+
+    # Capture history BEFORE appending current message — prevents duplication
+    history_snapshot = [
+        {"role": str(msg["role"]), "content": str(msg["content"])}
+        for msg in st.session_state.messages
+    ]
+
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user", avatar="👤"):
         st.markdown(prompt)
 
-    # Call the n8n webhook — passing full history BEFORE appending current message
     with st.chat_message("assistant", avatar="🤖"):
         with st.spinner("Analyzing patterns..."):
             ai_response = query_chatbot(
                 session_id=st.session_state.session_id,
                 user_message=prompt,
-                conversation_history=st.session_state.messages  # full history including current
+                conversation_history=history_snapshot
             )
             st.markdown(ai_response)
 

@@ -66,31 +66,45 @@ def query_chatbot(session_id, user_message, conversation_history):
         if not response.text.strip():
             return "I'm here — just taking a moment to think."
 
-        response_json = response.json()
+        # Try plain text first — if n8n returns text/plain
+        content_type = response.headers.get('Content-Type', '')
+        if 'text/plain' in content_type:
+            return response.text.strip()
 
-        # Handle list response
-        if isinstance(response_json, list):
-            data = response_json[0]
-        else:
-            data = response_json
+        # Try JSON parsing
+        try:
+            response_json = response.json()
 
-        # Try known response keys first
-        if "output" in data:
-            return data["output"]
-        elif "response" in data:
-            return data["response"]
-        elif "text" in data:
-            return data["text"]
-        else:
-            # Fallback — return first value
-            return list(data.values())[0]
+            # Handle list response
+            if isinstance(response_json, list):
+                data = response_json[0]
+            else:
+                data = response_json
+
+            # Try known response keys first
+            if "output" in data:
+                return data["output"]
+            elif "response" in data:
+                return data["response"]
+            elif "text" in data:
+                return data["text"]
+            elif "message" in data:
+                return data["message"]
+            else:
+                # Fallback — return first string value found
+                for v in data.values():
+                    if isinstance(v, str):
+                        return v
+                return str(list(data.values())[0])
+
+        except json.JSONDecodeError:
+            # If JSON parsing fails, return raw text
+            return response.text.strip() if response.text.strip() else "I'm having trouble connecting."
 
     except requests.exceptions.Timeout:
         return "Taking a bit longer than usual — please try again."
     except requests.exceptions.ConnectionError:
         return "Can't reach the server right now. Is ngrok running?"
-    except json.JSONDecodeError:
-        return response.text if response.text.strip() else "I'm having trouble connecting."
     except Exception as e:
         return f"Something went wrong. (Error: {e})"
 

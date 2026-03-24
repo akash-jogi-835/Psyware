@@ -59,17 +59,40 @@ def query_chatbot(session_id, user_message, conversation_history):
     headers = {'Content-Type': 'application/json'}
 
     try:
-        response = requests.post(url, headers=headers, data=payload)
+        response = requests.post(url, headers=headers, data=payload, timeout=60)
         response.raise_for_status()
+
+        # Handle empty response
+        if not response.text.strip():
+            return "I'm here — just taking a moment to think."
+
         response_json = response.json()
 
+        # Handle list response
         if isinstance(response_json, list):
             data = response_json[0]
         else:
             data = response_json
-        return list(data.values())[0]
+
+        # Try known response keys first
+        if "output" in data:
+            return data["output"]
+        elif "response" in data:
+            return data["response"]
+        elif "text" in data:
+            return data["text"]
+        else:
+            # Fallback — return first value
+            return list(data.values())[0]
+
+    except requests.exceptions.Timeout:
+        return "Taking a bit longer than usual — please try again."
+    except requests.exceptions.ConnectionError:
+        return "Can't reach the server right now. Is ngrok running?"
+    except json.JSONDecodeError:
+        return response.text if response.text.strip() else "I'm having trouble connecting."
     except Exception as e:
-        return f"I'm having a little trouble connecting. (Error: {e})"
+        return f"Something went wrong. (Error: {e})"
 
 # --- SIDEBAR ---
 with st.sidebar:

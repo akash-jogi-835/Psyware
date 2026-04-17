@@ -40,7 +40,7 @@ st.markdown("""
 
 # --- FUNCTION DEFINITION ---
 def query_chatbot(session_id, user_message, conversation_history):
-    url = "https://superexplicitly-nonderogatory-eleanor.ngrok-free.dev/webhook/stressagent"
+    url = "https://superexplicitly-nonderogatory-eleanor.ngrok-free.dev/webhook/Psyware"
 
     # Explicitly serialize each message to plain strings — prevents [object Object]
     formatted_history = [
